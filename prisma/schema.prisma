@@ -1,0 +1,71 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Curso {
+  id          Int                @id @default(autoincrement())
+  nome        String
+  codigo_mec  String             @unique
+  codigo_siaa String             @unique
+  disciplinas DisciplinaCursos[]
+  unidades    CursoUnidades[]
+  matrizes    Matriz[]
+
+  @@unique([codigo_siaa, codigo_mec])
+  @@map("cursos")
+}
+
+model CursoUnidades {
+  id                Int     @id @default(autoincrement())
+  unidade_nome      String
+  curso_codigo_siaa String
+  curso_codigo_mec  String
+  curso             Curso   @relation(fields: [curso_codigo_siaa, curso_codigo_mec], references: [codigo_siaa, codigo_mec])
+  unidade           Unidade @relation(fields: [unidade_nome], references: [nome])
+}
+
+model Unidade {
+  id            Int             @default(autoincrement())
+  nome          String          @id @unique
+  CursoUnidades CursoUnidades[]
+
+  @@map("unidades")
+}
+
+model Disciplina {
+  codigo               String             @id
+  nome                 String
+  hora_aula            Int?
+  hora_relogio         Int?
+  cursos_da_disciplina DisciplinaCursos[]
+  matriz               Matriz[]
+
+  @@map("disciplinas")
+}
+
+model DisciplinaCursos {
+  id                Int        @id @default(autoincrement())
+  disciplina        Disciplina @relation(fields: [disciplina_codigo], references: [codigo])
+  disciplina_codigo String
+  curso_codigo_mec  String
+  curso             Curso      @relation(fields: [curso_codigo_mec], references: [codigo_mec])
+
+  @@map("disciplinas_curso")
+}
+
+model Matriz {
+  id          Int          @id @default(autoincrement())
+  ano         String
+  semestre    String
+  disciplinas Disciplina[]
+  curso       Curso?       @relation(fields: [cursoId], references: [id])
+  cursoId     Int?
+}
