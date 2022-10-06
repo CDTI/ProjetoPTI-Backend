@@ -11,11 +11,10 @@ datasource db {
 }
 
 model Curso {
-  id          Int                @id @default(autoincrement())
+  id          Int             @id @default(autoincrement())
   nome        String
-  codigo_mec  String             @unique
-  codigo_siaa String             @unique
-  disciplinas DisciplinaCursos[]
+  codigo_mec  String          @unique
+  codigo_siaa String          @unique
   unidades    CursoUnidades[]
   matrizes    Matriz[]
 
@@ -41,31 +40,22 @@ model Unidade {
 }
 
 model Disciplina {
-  codigo               String             @id
-  nome                 String
-  hora_aula            Int?
-  hora_relogio         Int?
-  cursos_da_disciplina DisciplinaCursos[]
-  matriz               Matriz[]
+  id           Int      @id @default(autoincrement())
+  serie        Int
+  codigo       String
+  nome         String
+  hora_aula    Int?
+  hora_relogio Int?
+  matriz       Matriz[]
 
   @@map("disciplinas")
 }
 
-model DisciplinaCursos {
-  id                Int        @id @default(autoincrement())
-  disciplina        Disciplina @relation(fields: [disciplina_codigo], references: [codigo])
-  disciplina_codigo String
-  curso_codigo_mec  String
-  curso             Curso      @relation(fields: [curso_codigo_mec], references: [codigo_mec])
-
-  @@map("disciplinas_curso")
-}
-
 model Matriz {
-  id          Int          @id @default(autoincrement())
-  ano         String
-  semestre    String
-  disciplinas Disciplina[]
-  curso       Curso?       @relation(fields: [cursoId], references: [id])
-  cursoId     Int?
+  id               String       @id
+  ano              String
+  semestre         String
+  disciplinas      Disciplina[]
+  curso            Curso?       @relation(fields: [curso_codigo_mec], references: [codigo_mec])
+  curso_codigo_mec String?
 }

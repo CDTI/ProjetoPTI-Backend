@@ -3,26 +3,19 @@ import { client } from '../../../prisma';
 
 export class CreateDisciplineController {
   async handle(req: Request, res: Response) {
-    const { nome, hora_aula, hora_relogio, codigo, cursos_codigos} = req.body;
+    const { nome, serie, matriz_id, hora_aula, hora_relogio, codigo, cursos_codigos} = req.body;
     try {
       cursos_codigos.map(async (codigoCurso: string) => {
-        await client.disciplina.upsert({
-        where: {codigo},
-        update: {
-          cursos_da_disciplina: {
-            create: {
-              curso_codigo_mec: codigoCurso,
-            }
-          }
-        },
-        create: {
+        await client.disciplina.create({
+        data: {
+          serie: serie,
           codigo: codigo,
           nome: nome,
           hora_aula: hora_aula,
           hora_relogio: hora_relogio,
-          cursos_da_disciplina: {
-            create: {
-              curso: {connect: {codigo_mec: codigoCurso}}
+          matriz: {
+            connect: {
+              id: matriz_id
             }
           }
         },

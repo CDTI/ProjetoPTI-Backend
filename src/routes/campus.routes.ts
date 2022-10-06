@@ -6,8 +6,8 @@ const campusRoutes = Router();
 const createCampus = new CreateCampusController();
 const getAllCampus = new GetAllCampusController();
 
-
 campusRoutes.get('/', getAllCampus.handle)
 campusRoutes.post('/', createCampus.handle)
+
 
 export default campusRoutes

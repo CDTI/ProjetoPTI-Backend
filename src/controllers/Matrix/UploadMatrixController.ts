@@ -6,6 +6,7 @@ import { client } from "../../../prisma";
 const root = process.cwd();
 
 type Disciplina = {
+  serie: number;
   codigo: string;
   nome: string;
   hora_aula: number | null;
@@ -37,6 +38,7 @@ export class UploadMatrixController {
               row[2] !== "Temas Transversais"
             ) {
               rows.push({
+                serie: parseInt(row[0]),
                 codigo: row[1],
                 nome: row[2],
                 hora_aula: isNaN(parseInt(row[3])) ? 0 : parseInt(row[3]),
@@ -46,59 +48,37 @@ export class UploadMatrixController {
           }
         })
         .on("end", async function () {
+          const preMatrizId = `${codigo_siaa}-${ano}-${semestre}`;
+          const matrixAlreadyExists = await client.matriz.findFirst({where: {id: preMatrizId}});
+          if(matrixAlreadyExists) {
+            return res.status(500).json({ message: "Essa matriz já existe na base de dados." });
+          }
           const curso = await client.curso.findFirst({
             where: { codigo_siaa },
           });
           if (curso) {
             const matriz = await client.matriz.create({
-              data: {ano, semestre, curso: {connect: {codigo_mec: curso.codigo_mec}}},
+              data: {
+                id: preMatrizId,
+                ano, 
+                semestre, 
+                curso: {connect: {codigo_mec: curso.codigo_mec}}
+              },
             })
             let disciplinas = await Promise.all(
               rows.map(async (row) => {
-                const alreadyExists = await client.disciplinaCursos.findFirst({
-                  where: {
-                    disciplina: {
-                      matriz: {
-                        some: {
-                          id: matriz.id,
-                        }
-                      }
-                    },
-                    curso_codigo_mec: curso.codigo_mec,
-                    disciplina_codigo: row.codigo,
-                  },
-                });
-                if (!alreadyExists) {
-                  return await client.disciplina.upsert({
-                    where: { codigo: row.codigo },
-                    update: {
-                      cursos_da_disciplina: {
-                        create: {
-                          curso_codigo_mec: curso?.codigo_mec,
-                        },
-                      },
-                    },
-                    create: {
+                  return await client.disciplina.create({
+                    data: {
+                      serie: row.serie,
                       codigo: row.codigo,
                       nome: row.nome,
                       hora_aula: row.hora_aula,
                       hora_relogio: row.hora_relogio,
-                      cursos_da_disciplina: {
-                        create: {
-                          curso: { connect: { codigo_mec: curso?.codigo_mec } },
-                        },
-                      },
+                      matriz: {connect: {id: matriz.id}},
                     },
                   });
-                }
               })
             ).catch((err) => console.log(err.message));
-            await client.matriz.update({where: {id: matriz.id}, data: {
-              disciplinas: {
-                connect: (disciplinas as []).map((disciplina: Disciplina) => ({codigo: disciplina?.codigo}))
-              }
-            }})
-            disciplinas = (disciplinas as Disciplina[]).filter((disc) => disc !== undefined);
             return res.status(200).json({message: "Disciplina criadas com sucesso.",matriz: { disciplinas, curso: curso.nome }});
           }
         });
